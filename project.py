@@ -366,106 +366,73 @@ def add_venue(connection, eid, vid, is_primary):
 
 # Start of Eric's Code
 
-def reserveSlot(eid: int, snum: int, uid: int):
-    connection = None
-    cursor = None
+def reserve_slot(connection, eid, snum, uid):
+    cursor = connection.cursor()
     try:
-        connection = get_connection()
-        cursor = connection.cursor()
-
-        check_query = """
-            SELECT is_reserved 
-            FROM Slot 
-            WHERE eid = %s AND snum = %s
-        """
-        cursor.execute(check_query, (eid, snum))
+        cursor.execute(
+            "SELECT is_reserved FROM `Slot` WHERE eid = %s AND snum = %s",
+            (eid, snum),
+        )
         result = cursor.fetchone()
-
-        if not result or result[0] == 1:
-            print("Fail")
-            return
-        update_query = """
-            UPDATE Slot 
-            SET is_reserved = 1, uid = %s 
-            WHERE eid = %s AND snum = %s
-        """
-        cursor.execute(update_query, (uid, eid, snum))
+        if result is None or result[0] == 1:
+            return False
+        cursor.execute(
+            "UPDATE `Slot` SET is_reserved = 1, uid = %s "
+            "WHERE eid = %s AND snum = %s",
+            (uid, eid, snum),
+        )
         connection.commit()
-        
-        print("Success")
-
-    except Error as e:
-        if connection:
-            connection.rollback()
-        print("Fail")
+        return True
+    except Exception:
+        connection.rollback()
+        return False
     finally:
-        if cursor: cursor.close()
-        if connection: connection.close()
+        cursor.close()
 
-def cancelReservation(eid: int, snum: int, uid: int):
-    connection = None
-    cursor = None
+
+def cancel_reservation(connection, eid, snum, uid):
+    cursor = connection.cursor()
     try:
-        connection = get_connection()
-        cursor = connection.cursor()
-
-        check_query = """
-            SELECT is_reserved 
-            FROM Slot 
-            WHERE eid = %s AND snum = %s AND uid = %s
-        """
-        cursor.execute(check_query, (eid, snum, uid))
+        cursor.execute(
+            "SELECT is_reserved FROM `Slot` "
+            "WHERE eid = %s AND snum = %s AND uid = %s",
+            (eid, snum, uid),
+        )
         result = cursor.fetchone()
-
-        if not result or result[0] == 0:
-            print("Fail")
-            return
-
-        update_query = """
-            UPDATE Slot 
-            SET is_reserved = 0, uid = NULL 
-            WHERE eid = %s AND snum = %s AND uid = %s
-        """
-        cursor.execute(update_query, (eid, snum, uid))
+        if result is None or result[0] == 0:
+            return False
+        cursor.execute(
+            "UPDATE `Slot` SET is_reserved = 0, uid = NULL "
+            "WHERE eid = %s AND snum = %s AND uid = %s",
+            (eid, snum, uid),
+        )
         connection.commit()
-        
-        print("Success")
-
-    except Error as e:
-        if connection:
-            connection.rollback()
-        print("Fail")
+        return True
+    except Exception:
+        connection.rollback()
+        return False
     finally:
-        if cursor: cursor.close()
-        if connection: connection.close()
+        cursor.close()
 
-def updateEvent(eid: int, title: str, datetime_str: str):
-    connection = None
-    cursor = None
+
+def update_event(connection, eid, title, datetime_value):
+    cursor = connection.cursor()
     try:
-        connection = get_connection()
-        cursor = connection.cursor()
-
-        update_query = """
-            UPDATE Event 
-            SET title = %s, date = %s 
-            WHERE eid = %s
-        """
-        cursor.execute(update_query, (title, datetime_str, eid))
-        connection.commit()
-        
-        if cursor.rowcount > 0:
-            print("Success")
-        else:
-            print("Fail")
-
-    except Error as e:
-        if connection:
+        cursor.execute(
+            "UPDATE `Event` SET title = %s, `date` = %s WHERE eid = %s",
+            (title, datetime_value, eid),
+        )
+        if cursor.rowcount == 0:
             connection.rollback()
-        print("Fail")
+            return False
+        connection.commit()
+        return True
+    except Exception:
+        connection.rollback()
+        return False
     finally:
-        if cursor: cursor.close()
-        if connection: connection.close()
+        cursor.close()
+        
 # End of Eric's Code
 
 # Start of Sidhant Malik Code
