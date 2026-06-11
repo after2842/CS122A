@@ -25,18 +25,13 @@ import mysql.connector
 # ---------------------------------------------------------------------------
 
 def connect():
-    """Open a connection to the cs122a database.
-
-    The autograder requires these exact user/password/database values, so I
-    hard-code them here just like the project instructions say.
-    """
+    """Open a connection to the cs122a database with the autograder's credentials."""
     connection = mysql.connector.connect(
         user="test",
         password="password",
         database="cs122a",
     )
-    # I turn autocommit OFF so that I control when a transaction is committed
-    # or rolled back. This matters for the insert/update/delete functions.
+    # autocommit off so the insert/update/delete functions control their own commits
     connection.autocommit = False
     return connection
 
@@ -46,24 +41,14 @@ def connect():
 # ---------------------------------------------------------------------------
 
 def parse_argument(value):
-    """Convert one command-line / CSV string into the value we store.
-
-    Rule 7 of the project says the literal string "NULL" should become the
-    Python None type (not the text "NULL"). Everything else stays as a string;
-    MySQL will convert "101" to an int, "2024-01-05" to a date, and so on when
-    it inserts into a typed column.
-    """
+    """Convert a CSV/command-line string to its stored value; "NULL" becomes None."""
     if value == "NULL":
         return None
     return value
 
 
 def parse_boolean(value):
-    """Convert a command-line boolean string into a real Python bool.
-
-    The is_primary parameter is given as text like "true" or "false". I also
-    accept "1" / "0" just to be safe. Anything else is treated as False.
-    """
+    """Convert a boolean string ("true"/"1") to a bool; anything else is False."""
     lowered = value.strip().lower()
     if lowered in ("true", "1"):
         return True
@@ -71,21 +56,15 @@ def parse_boolean(value):
 
 
 def format_value(value):
-    """Turn one value coming back from the database into the text we print.
-
-    - None        -> "NULL"
-    - True/False   -> "1" / "0"
-    - datetime     -> "YYYY-MM-DD HH:MM:SS"
-    - date         -> "YYYY-MM-DD"
-    - anything else -> str(value)
-
-    Note: datetime.datetime is a subclass of datetime.date, so I have to check
-    datetime first, otherwise a datetime would be printed without its time.
+    """Format a database value for output: None -> "NULL", bool -> "1"/"0",
+    datetime -> "YYYY-MM-DD HH:MM:SS", date -> "YYYY-MM-DD", else str().
     """
     if value is None:
         return "NULL"
     if isinstance(value, bool):
         return "1" if value else "0"
+    # datetime before date: datetime is a subclass, so the date branch would
+    # otherwise match it and drop the time
     if isinstance(value, datetime.datetime):
         return value.strftime("%Y-%m-%d %H:%M:%S")
     if isinstance(value, datetime.date):
@@ -94,11 +73,7 @@ def format_value(value):
 
 
 def print_table(rows):
-    """Print a result table.
-
-    Each record is printed on its own line and the columns are separated by a
-    comma, exactly like the format of the dataset CSV files.
-    """
+    """Print each row on its own line, columns comma-separated like the CSV files."""
     for row in rows:
         formatted_cells = [format_value(cell) for cell in row]
         print(",".join(formatted_cells))
@@ -108,10 +83,8 @@ def print_table(rows):
 # Schema definition (used by the import function)
 # ---------------------------------------------------------------------------
 
-# The order tables are created in. Parent tables come before child tables so
-# that the foreign keys always point at something that already exists.
-# I also use this same order (forward) to insert the CSV rows, and the reverse
-# of this order to drop the tables.
+# Table creation order: parents before children so foreign keys always resolve.
+# Inserts use this order; drops use the reverse.
 CREATE_ORDER = [
     "User",
     "Organizer",
@@ -126,9 +99,8 @@ CREATE_ORDER = [
     "Approval",
 ]
 
-# The CREATE TABLE statement for each table.
-# I wrap the table names and the columns "type"/"date" in backticks because
-# those are reserved words in MySQL.
+# CREATE TABLE statement per table. Table names and the `type`/`date` columns
+# are backticked since they're reserved words in MySQL.
 CREATE_STATEMENTS = {
     "User": (
         "CREATE TABLE `User` ("
@@ -236,9 +208,7 @@ CREATE_STATEMENTS = {
     ),
 }
 
-# The column names of each table, in the same order they appear in the CSV
-# files (which follows the DDL attribute order). I use this to build the
-# INSERT statements during import.
+# Column names per table, in CSV/DDL order. Used to build the INSERT statements.
 TABLE_COLUMNS = {
     "User": ["uid", "email", "username", "joined"],
     "Organizer": ["uid", "department", "experience"],
@@ -255,15 +225,11 @@ TABLE_COLUMNS = {
 
 
 def build_insert_statement(table_name, columns):
-    """Build a parameterized INSERT statement for one table.
+    """Build a parameterized INSERT for one table.
 
-    I wrap every column name in backticks so reserved words like `type` and
-    `date` are safe, and I use %s placeholders so mysql.connector handles the
-    values safely.
-
-    Example result:
-        INSERT INTO `User` (`uid`, `email`, `username`, `joined`)
-        VALUES (%s, %s, %s, %s)
+    Column names are backticked (for reserved words like `type`/`date`) and
+    values use %s placeholders, e.g.:
+        INSERT INTO `User` (`uid`, `email`, ...) VALUES (%s, %s, ...)
     """
     quoted_columns = ["`" + column + "`" for column in columns]
     placeholders = ["%s"] * len(columns)
