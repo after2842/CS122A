@@ -494,47 +494,36 @@ def update_event(connection, eid, title, datetime_value):
         cursor.close()
 
 
-# ---------------------------------------------------------------------------
+# Start of Sidhant Malik Code
+
 # Function 7: deleteOrganizer
-# ---------------------------------------------------------------------------
 
 def delete_organizer(connection, uid):
-    """Delete an organizer.
-
-    Because of ON DELETE CASCADE, deleting the organizer also deletes their
-    events, and deleting those events also deletes the related Slot and
-    Hosting rows. Returns True if an organizer was actually deleted.
-    """
+    """Delete an organizer by uid. Cascades to their events, slots, hosting."""
     cursor = connection.cursor()
+    
     try:
         cursor.execute("DELETE FROM `Organizer` WHERE uid = %s", (uid,))
+        # rowcount is 0 if no organizer had that uid
         if cursor.rowcount >= 1:
             connection.commit()
             return True
-        else:
-            connection.rollback()
-            return False
+        connection.rollback()
+        return False
     except Exception:
         connection.rollback()
         return False
     finally:
         cursor.close()
 
-
-# ---------------------------------------------------------------------------
 # Function 8: availableEvents
-# ---------------------------------------------------------------------------
 
 def available_events(connection, date_value):
-    """List future events that still have at least one unreserved slot.
-
-    For each such event I also count how many slots are still available.
-    "Future" means the event datetime is after the given date (the date is
-    treated as midnight of that day). Sorted by datetime, then event id.
-    Returns a list of rows.
-    """
+    """Future events with at least one open slot, plus the open slot count."""
     cursor = connection.cursor()
+    
     try:
+        # date_value counts as midnight, so same-day events are not "future"
         cursor.execute(
             "SELECT e.eid, e.title, e.`type`, e.`date`, "
             "       COUNT(*) AS availableSlots "
@@ -545,28 +534,21 @@ def available_events(connection, date_value):
             "ORDER BY e.`date` ASC, e.eid ASC",
             (date_value,),
         )
-        rows = cursor.fetchall()
-        return rows
+        
+        return cursor.fetchall()
     except Exception:
         return []
     finally:
         cursor.close()
 
-
-# ---------------------------------------------------------------------------
-# Function 9: popularEventTypes
-# ---------------------------------------------------------------------------
+# function 9: popularEventTypes
 
 def popular_event_types(connection, n):
-    """For each event type, count the total reserved slots across all events.
-
-    Only return event types whose reserved count is at least N. I use a LEFT
-    JOIN so that a type still shows up (with a count) even if it has events
-    with no slots, and I CAST the SUM to a signed integer so it prints as a
-    plain number. Sorted by reserved count descending, then type ascending.
-    """
+    """Event types with >= N total reserved slots, highest count first."""
     cursor = connection.cursor()
+    
     try:
+        # CAST keeps SUM from coming back as a Decimal
         cursor.execute(
             "SELECT e.`type`, "
             "       CAST(SUM(CASE WHEN s.is_reserved = 1 THEN 1 ELSE 0 END) "
@@ -578,12 +560,13 @@ def popular_event_types(connection, n):
             "ORDER BY reservedCount DESC, e.`type` ASC",
             (n,),
         )
-        rows = cursor.fetchall()
-        return rows
+        return cursor.fetchall()
     except Exception:
         return []
     finally:
         cursor.close()
+
+# End of Sidhant Malik code
 
 
 # ---------------------------------------------------------------------------
