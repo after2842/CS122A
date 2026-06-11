@@ -403,95 +403,116 @@ def add_venue(connection, eid, vid, is_primary):
 # Function 4: reserveSlot
 # ---------------------------------------------------------------------------
 
-def reserve_slot(connection, eid, snum, uid):
-    """Reserve a slot for a participant, only if the slot is unreserved.
-
-    I update the slot only when is_reserved is currently 0. If exactly one row
-    is changed, the reservation worked. If no row changes (the slot is already
-    reserved or does not exist), I return False.
-    """
-    cursor = connection.cursor()
+def reserveSlot(eid: int, snum: int, uid: int):
+    connection = None
+    cursor = None
     try:
-        cursor.execute(
-            "UPDATE `Slot` SET is_reserved = 1, uid = %s "
-            "WHERE eid = %s AND snum = %s AND is_reserved = 0",
-            (uid, eid, snum),
-        )
-        if cursor.rowcount == 1:
-            connection.commit()
-            return True
-        else:
+        connection = get_connection()
+        cursor = connection.cursor()
+
+        check_query = """
+            SELECT is_reserved 
+            FROM Slot 
+            WHERE eid = %s AND snum = %s
+        """
+        cursor.execute(check_query, (eid, snum))
+        result = cursor.fetchone()
+
+        if not result or result[0] == 1:
+            print("Fail")
+            return
+        update_query = """
+            UPDATE Slot 
+            SET is_reserved = 1, uid = %s 
+            WHERE eid = %s AND snum = %s
+        """
+        cursor.execute(update_query, (uid, eid, snum))
+        connection.commit()
+        
+        print("Success")
+
+    except Error as e:
+        if connection:
             connection.rollback()
-            return False
-    except Exception:
-        connection.rollback()
-        return False
+        print("Fail")
     finally:
-        cursor.close()
+        if cursor: cursor.close()
+        if connection: connection.close()
 
 
 # ---------------------------------------------------------------------------
 # Function 5: cancelReservation
 # ---------------------------------------------------------------------------
 
-def cancel_reservation(connection, eid, snum, uid):
-    """Cancel a reservation, only if the slot is reserved by this participant.
-
-    I update the slot back to unreserved (and clear the participant) only when
-    it is currently reserved AND belongs to the given uid. If no row matches,
-    return False.
-    """
-    cursor = connection.cursor()
+def cancelReservation(eid: int, snum: int, uid: int):
+    connection = None
+    cursor = None
     try:
-        cursor.execute(
-            "UPDATE `Slot` SET is_reserved = 0, uid = NULL "
-            "WHERE eid = %s AND snum = %s AND is_reserved = 1 AND uid = %s",
-            (eid, snum, uid),
-        )
-        if cursor.rowcount == 1:
-            connection.commit()
-            return True
-        else:
+        connection = get_connection()
+        cursor = connection.cursor()
+
+        check_query = """
+            SELECT is_reserved 
+            FROM Slot 
+            WHERE eid = %s AND snum = %s AND uid = %s
+        """
+        cursor.execute(check_query, (eid, snum, uid))
+        result = cursor.fetchone()
+
+        if not result or result[0] == 0:
+            print("Fail")
+            return
+
+        update_query = """
+            UPDATE Slot 
+            SET is_reserved = 0, uid = NULL 
+            WHERE eid = %s AND snum = %s AND uid = %s
+        """
+        cursor.execute(update_query, (eid, snum, uid))
+        connection.commit()
+        
+        print("Success")
+
+    except Error as e:
+        if connection:
             connection.rollback()
-            return False
-    except Exception:
-        connection.rollback()
-        return False
+        print("Fail")
     finally:
-        cursor.close()
+        if cursor: cursor.close()
+        if connection: connection.close()
 
 
 # ---------------------------------------------------------------------------
 # Function 6: updateEvent
 # ---------------------------------------------------------------------------
 
-def update_event(connection, eid, title, datetime_value):
-    """Update the title and datetime of an event.
-
-    I first check that the event exists with a SELECT. I do this instead of
-    only trusting the UPDATE row count, because if the new title and datetime
-    happen to be the same as the old ones, the UPDATE would report 0 changed
-    rows even though the event is really there.
-    """
-    cursor = connection.cursor()
+def updateEvent(eid: int, title: str, datetime_str: str):
+    connection = None
+    cursor = None
     try:
-        cursor.execute("SELECT 1 FROM `Event` WHERE eid = %s", (eid,))
-        event_exists = cursor.fetchone()
-        if event_exists is None:
-            connection.rollback()
-            return False
+        connection = get_connection()
+        cursor = connection.cursor()
 
-        cursor.execute(
-            "UPDATE `Event` SET title = %s, `date` = %s WHERE eid = %s",
-            (title, datetime_value, eid),
-        )
+        update_query = """
+            UPDATE Event 
+            SET title = %s, date = %s 
+            WHERE eid = %s
+        """
+        cursor.execute(update_query, (title, datetime_str, eid))
         connection.commit()
-        return True
-    except Exception:
-        connection.rollback()
-        return False
+        
+        if cursor.rowcount > 0:
+            print("Success")
+        else:
+            print("Fail")
+
+    except Error as e:
+        if connection:
+            connection.rollback()
+        print("Fail")
     finally:
-        cursor.close()
+        if cursor: cursor.close()
+        if connection: connection.close()
 
 
 # ---------------------------------------------------------------------------
