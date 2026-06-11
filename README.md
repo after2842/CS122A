@@ -42,6 +42,3 @@ needed to run it.
   `127.0.0.1:3306`, which can be overridden with the `MYSQL_USER`,
   `MYSQL_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_HOST`, and `MYSQL_PORT`
   environment variables.
-
-> Note: both the tests and the `import` command drop and recreate all tables,
-> so point them at a throwaway database.
