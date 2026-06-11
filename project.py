@@ -576,20 +576,17 @@ def popular_event_types(connection, n):
 
 # End of Sidhant Malik code
 
-
+#################################################################
+# Functioin 10,11, and 12 maintained by Samuel Choi
 # ---------------------------------------------------------------------------
 # Function 10: participantSchedule
 # ---------------------------------------------------------------------------
 
 def participant_schedule(connection, uid):
-    """List every event the participant has reserved a slot for.
-
-    Each row also includes the slot number and the primary venue information
-    (if the event has a primary venue). If there is no primary venue, the
-    venue columns come back as NULL. Sorted by event datetime ascending.
-    """
+    """Events a participant reserved, with slot number and primary venue."""
     cursor = connection.cursor()
     try:
+        # LEFT JOIN so events with no primary venue still show, with NULL venue cols
         cursor.execute(
             "SELECT e.eid, e.title, e.`type`, e.`date`, s.snum, "
             "       v.vid, v.street, v.city, v.state, v.zip "
@@ -614,14 +611,10 @@ def participant_schedule(connection, uid):
 # ---------------------------------------------------------------------------
 
 def organizer_stats(connection, n):
-    """List organizers who have created at least N events.
-
-    I use a LEFT JOIN to Event so an organizer with zero events still gets a
-    count of 0 (they just won't pass the HAVING unless N is 0). Sorted by event
-    count descending, then organizer uid ascending.
-    """
+    """Organizers with >= N events, plus their event count, highest count first."""
     cursor = connection.cursor()
     try:
+        # LEFT JOIN so an organizer with zero events still counts as 0
         cursor.execute(
             "SELECT o.uid, u.username, o.department, "
             "       COUNT(ev.eid) AS eventCount "
@@ -646,11 +639,7 @@ def organizer_stats(connection, n):
 # ---------------------------------------------------------------------------
 
 def venue_events(connection, vid):
-    """List every event hosted at a given venue.
-
-    Each row also shows whether the venue is the primary venue for that event.
-    Sorted by event datetime ascending, then event id ascending.
-    """
+    """Events hosted at a venue, flagged by whether it's the primary venue."""
     cursor = connection.cursor()
     try:
         cursor.execute(
