@@ -398,10 +398,7 @@ def add_venue(connection, eid, vid, is_primary):
     finally:
         cursor.close()
 
-
-# ---------------------------------------------------------------------------
-# Function 4: reserveSlot
-# ---------------------------------------------------------------------------
+# Start of Eric's Code
 
 def reserveSlot(eid: int, snum: int, uid: int):
     connection = None
@@ -438,11 +435,6 @@ def reserveSlot(eid: int, snum: int, uid: int):
     finally:
         if cursor: cursor.close()
         if connection: connection.close()
-
-
-# ---------------------------------------------------------------------------
-# Function 5: cancelReservation
-# ---------------------------------------------------------------------------
 
 def cancelReservation(eid: int, snum: int, uid: int):
     connection = None
@@ -481,11 +473,6 @@ def cancelReservation(eid: int, snum: int, uid: int):
         if cursor: cursor.close()
         if connection: connection.close()
 
-
-# ---------------------------------------------------------------------------
-# Function 6: updateEvent
-# ---------------------------------------------------------------------------
-
 def updateEvent(eid: int, title: str, datetime_str: str):
     connection = None
     cursor = None
@@ -513,7 +500,7 @@ def updateEvent(eid: int, title: str, datetime_str: str):
     finally:
         if cursor: cursor.close()
         if connection: connection.close()
-
+# End of Eric's Code
 
 # Start of Sidhant Malik Code
 
