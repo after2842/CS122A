@@ -7,4 +7,4 @@ updating events, and running queries (available events, popular event types,
 participant schedules, organizer stats, and venue events).
 
 
-https://docs.google.com/document/d/13Cql60-M8BioxbQTWUX23ENB8d2uOBaLNpo9jTfCZoo/edit?usp=sharing
+
